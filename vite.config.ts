@@ -50,14 +50,14 @@ export default defineConfig({
           {
             // latest/all.json updates regularly, so try the network first.
             urlPattern:
-              /^https:\/\/raw\.githubusercontent\.com\/.*\/latest\/all\.json$/,
+              /^https:\/\/cddaraw\.doiiars\.com\/.*\/latest\/all\.json$/,
             handler: "NetworkFirst",
           },
           {
             // the other all.json files are the same forever, so if we have
             // them from the cache they are fine.
             urlPattern:
-              /^https:\/\/raw\.githubusercontent\.com\/.*\/all\.json$/,
+              /^https:\/\/cddaraw\.doiiars\.com\/.*\/all\.json$/,
             handler: "CacheFirst",
           },
           {

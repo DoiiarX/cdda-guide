@@ -21,7 +21,7 @@ let builds:
     }[]
   | null = null;
 
-fetch("https://raw.githubusercontent.com/nornagon/cdda-data/main/builds.json")
+fetch("https://cddaraw.doiiars.com/nornagon/cdda-data/main/builds.json")
   .then((d) => d.json())
   .then((b) => {
     builds = b;
@@ -38,39 +38,39 @@ data.setVersion(version, locale);
 const tilesets = [
   {
     name: "AltiCa",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/Altica",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/Altica",
   },
   {
     name: "BrownLikeBears",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/BrownLikeBears",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/BrownLikeBears",
   },
   {
     name: "Chibi_Ultica",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/ChibiUltica",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/ChibiUltica",
   },
   {
     name: "Cuteclysm(Alpha)",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/Cuteclysm",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/Cuteclysm",
   },
   {
     name: "Hollow Moon",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/HollowMoon",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/HollowMoon",
   },
   {
     name: "MSXotto+",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/MshockXotto%2B",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/MshockXotto%2B",
   },
   {
     name: "NeoDays",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/NeoDaysTileset",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/NeoDaysTileset",
   },
   {
     name: "RetroDays",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/RetroDaysTileset",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/RetroDaysTileset",
   },
   {
     name: "UltiCa",
-    url: "https://raw.githubusercontent.com/CleverRaven/Cataclysm-DDA/{version}/gfx/UltimateCataclysm",
+    url: "https://cddaraw.doiiars.com/CleverRaven/Cataclysm-DDA/{version}/gfx/UltimateCataclysm",
   },
 ];
 
@@ -328,6 +328,17 @@ function langHref(lang: string, href: string) {
         id="search" />
     </div>
   </nav>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6765970453610684"
+     crossorigin="anonymous"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KQB25CC08Q"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KQB25CC08Q');
+</script>
 </header>
 <main>
   {#if item}
