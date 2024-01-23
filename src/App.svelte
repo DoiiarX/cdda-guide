@@ -327,6 +327,12 @@ function langHref(lang: string, href: string) {
         on:input={clearItem}
         id="search" />
     </div>
+    <div class="blog-link">
+      <strong>
+      <a href="http://notion.doiiars.com"><span class="wide">Doiiars的博客</span><span
+        class="narrow">博客</span></a>
+      </strong>
+    </div>
   </nav>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6765970453610684"
      crossorigin="anonymous"></script>
@@ -646,6 +652,14 @@ nav > .title {
   margin-right: 1em;
 }
 
+nav > .blog-link .narrow {
+  display: none;
+}
+
+nav > .blog-link {
+  margin-left: 1em;
+}
+
 @media (max-width: 600px) {
   nav > .title .wide {
     display: none;
@@ -653,6 +667,15 @@ nav > .title {
   nav > .title .narrow {
     display: inline;
   }
+
+  nav > .blog-link .wide {
+    display: none;
+  }
+
+  nav > .blog-link .narrow {
+    display: inline;
+  }
+
 
   nav > .search {
     flex: 1;
