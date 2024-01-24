@@ -1,5 +1,5 @@
 # Use a Node.js base image
-FROM node:latest
+FROM node:slim
 
 # Set the working directory in the container
 WORKDIR /cdda-guide
@@ -21,3 +21,6 @@ EXPOSE $PORT
 
 # Command to run the application
 CMD ["yarn", "dev", "--host", "0.0.0.0", "--port", "3000"]
+
+# use this command to build image 
+# docker build -t cdda-guide .
