@@ -274,7 +274,10 @@ export class CddaData {
       ) {
         if (!this._byTypeById.has(mappedType))
           this._byTypeById.set(mappedType, new Map());
-        const id = obj.result + (obj.id_suffix ? "_" + obj.id_suffix : "");
+        const id =
+          obj.result +
+          (obj.variant && !obj.abstract ? "_" + obj.variant : "") +
+          (obj.id_suffix ? "_" + obj.id_suffix : "");
         this._byTypeById.get(mappedType)!.set(id, obj);
       }
       if (
@@ -913,7 +916,7 @@ export class CddaData {
             }).map((p) => prod(p, nProb, nCount))
           );
         } else {
-          throw new Error(`unknown item group entry: ${JSON.stringify(entry)}`);
+          console.warn(`unknown item group entry: ${JSON.stringify(entry)}`);
         }
       }
     } else {
@@ -974,7 +977,7 @@ export class CddaData {
             }).map((p) => prod(p, nProb, nCount))
           );
         } else {
-          throw new Error(`unknown item group entry: ${JSON.stringify(entry)}`);
+          console.warn(`unknown item group entry: ${JSON.stringify(entry)}`);
         }
       }
     }
@@ -1477,6 +1480,7 @@ class ReverseIndex<T extends keyof SupportedTypesWithMapped> {
     if (!this.#_index) {
       this.#_index = new Map();
       for (const item of this.data.byType(this.objType)) {
+        if (!("id" in item || "result" in item)) continue;
         for (const id of this.fn(item)) {
           if (!this.#index.has(id)) this.#index.set(id, []);
           this.#index.get(id)!.push(item);

@@ -161,6 +161,7 @@ export type Recipe = {
   type: "recipe" | "uncraft" | "practice";
 
   id_suffix?: string; // only for type 'recipe'. not allowed for abstracts
+  variant?: string;
   obsolete?: boolean;
 
   time?: number /* moves */ | string /* duration */;
@@ -553,7 +554,7 @@ export type UseFunction =
       // practice, STRONG_ANTIBIOTIC and CROWBAR are the only instances of
       // this. Instead of using the fully generic |string| type, keep this here
       // so we get a schema warning when new use actions are added.
-      type: "STRONG_ANTIBIOTIC" | "CROWBAR";
+      type: "STRONG_ANTIBIOTIC" | "CROWBAR" | "VOLTMETER";
     };
 
 type ItemActionUseFunction = {
@@ -793,7 +794,7 @@ export type FaultFix = {
   faults_added?: string[]; // fault_id
   mod_damage?: number; // int
   mod_degredation?: number; // int
-  requirements?: [string, number][] | RequirementData[];
+  requirements?: ([string, number] | RequirementData)[];
 };
 
 export type JsonFlag = {
@@ -1354,7 +1355,7 @@ export type Monster = {
   harvest?: string; // harvest_id
   dissect?: string; // harvest_id
   bodytype?: string;
-  species?: string[];
+  species?: string | string[];
   speed?: number;
   melee_skill?: integer;
   melee_dice?: integer;
