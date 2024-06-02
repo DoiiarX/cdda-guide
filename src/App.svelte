@@ -343,7 +343,7 @@ function langHref(lang: string, href: string) {
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'G-KQB25CC08Q','content_group':'cataclysmdda');
+    gtag('config', 'G-KQB25CC08Q');
 </script>
 </header>
 <main>
