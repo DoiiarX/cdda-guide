@@ -310,17 +310,7 @@ export type ToolSlot = {
   rand_charges?: integer[];
 };
 
-export type DamageTypeId =
-  | "pure"
-  | "biological"
-  | "bash"
-  | "cut"
-  | "acid"
-  | "stab"
-  | "bullet"
-  | "heat"
-  | "cold"
-  | "electric"; // TODO maybe no longer static?
+export type DamageTypeId = string;
 
 export type DamageUnit = {
   damage_type: DamageTypeId;
@@ -415,7 +405,9 @@ export type ComestibleSlot = {
   addiction_potential?: integer; // default 0
   calories?: integer;
   vitamins?: [string, integer | mass][];
-  rot_spawn?: string; // mongroup_id
+  rot_spawn?:
+    | string // mongroup_id
+    | { monster?: string; group?: string; chance?: integer };
   rot_spawn_chance?: integer; // default 10
 };
 
@@ -430,6 +422,14 @@ export type AddictionType = {
   builtin?: string;
 };
 
+export type BreathabilityRating =
+  | "IMPERMEABLE"
+  | "POOR"
+  | "AVERAGE"
+  | "GOOD"
+  | "MOISTURE_WICKING"
+  | "SECOND_SKIN";
+
 export type ArmorPortionData = {
   encumbrance?: integer | [integer, integer];
   encumbrance_modifiers?: (
@@ -439,13 +439,7 @@ export type ArmorPortionData = {
     | "NONE"
   )[];
   coverage?: integer;
-  breathability?:
-    | "IMPERMEABLE"
-    | "POOR"
-    | "AVERAGE"
-    | "GOOD"
-    | "MOISTURE_WICKING"
-    | "SECOND_SKIN";
+  breathability?: BreathabilityRating;
   cover_melee?: integer; // default = coverage
   cover_ranged?: integer; // default = coverage
   cover_vitals?: integer; // default 0
@@ -1042,7 +1036,7 @@ export type Vitamin = {
   excess?: string; // effect_id
   min?: number; // int
   max?: number; // int, default 0
-  rate?: string; // duration
+  rate: string; // duration
   vit_type: "vitamin" | "toxin" | "drug" | "counter";
   disease?: [number, number][];
   disease_excess?: [number, number][];
@@ -1276,12 +1270,13 @@ export interface PaletteData {
   sealed_item?: PlaceMapping<MapgenSealedItem>;
 }
 
-export interface Palette {
+export interface Palette extends PaletteData {
   id: string;
   type: "palette";
-  terrain?: any;
-  furniture?: any;
-  nested?: any;
+}
+export interface PaletteData {
+  furniture?: PlaceMappingAlternative<MapgenValue>;
+  terrain?: PlaceMappingAlternative<MapgenValue>;
   //toilets?: ToiletsClass;
   items?: PlaceMapping<MapgenItemGroup>;
   //vendingmachines?: Vendingmachines;
@@ -1295,7 +1290,18 @@ export interface Palette {
   //monsters?: Monsters;
   //gaspumps?: Gaspumps;
   //signs?: Signs;
+  nested?: PlaceMapping<MapgenNested>;
+
+  palettes?: MapgenValue[];
+
+  parameters?: Record<string, MapgenParameter>;
 }
+
+type MapgenParameter = {
+  scope?: "overmap_special" | "omt" | "nest";
+  type: "palette_id"; // TODO: more enum types?
+  default: MapgenValue;
+};
 
 export interface MapgenMapping {
   items?: MapgenItemGroup | MapgenItemGroup[];
@@ -1685,6 +1691,8 @@ export type Material = {
   repaired_with?: string; // item_id
 
   vitamins?: [string, number][];
+
+  breathability?: BreathabilityRating;
 };
 
 export type MartialArtBuff = {

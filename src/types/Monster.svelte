@@ -12,7 +12,13 @@ import {
   singularName,
 } from "../data";
 import ThingLink from "./ThingLink.svelte";
-import type { Harvest, Monster, MonsterGroup, Resistances } from "../types";
+import type {
+  Harvest,
+  Monster,
+  MonsterGroup,
+  Resistances,
+  SpecialAttack as SpecialAttackT,
+} from "../types";
 import ItemSymbol from "./item/ItemSymbol.svelte";
 import SpecialAttack from "./monster/SpecialAttack.svelte";
 import Spoiler from "../Spoiler.svelte";
@@ -64,17 +70,20 @@ function difficulty(mon: Monster): number {
   const melee_dmg_total = normalizedMeleeDamage.reduce((acc, { amount = 0, damage_multiplier = 1, constant_damage_multiplier = 1 }) => acc + amount * damage_multiplier * constant_damage_multiplier, 0)
   let armor_diff = 3
   for (const [damageTypeId, amount] of Object.entries(monsterArmor(mon.armor ?? {}))) {
-    const damageType = data.byId("damage_type", damageTypeId)
-    if (damageType.mon_difficulty)
+    const damageType = data.byIdMaybe("damage_type", damageTypeId)
+    if (damageType?.mon_difficulty)
       armor_diff += amount
   }
+  const irrelevantAttacks = ["PARROT", "PARROT_AT_DANGER", "GRAZE", "EAT_CROP", "EAT_FOOD", "EAT_CARRION"]
+  const id = (a: SpecialAttackT): string => Array.isArray(a) ? a[0] : "id" in a ? a.id : ""
+  const relevantSpecialAttacks = special_attacks.filter(a => !irrelevantAttacks.includes(id(a)))
   let difficulty = ( melee_skill + 1 ) * melee_dice * ( melee_dmg_total + melee_sides ) * 0.04 +
                ( sk_dodge + 1 ) * armor_diff * 0.04 +
-               ( difficulty_base + special_attacks.length + 8 * emit_fields.length );
+               ( difficulty_base + relevantSpecialAttacks.length + 8 * emit_fields.length );
   difficulty = Math.floor(difficulty);
   difficulty *= ( (hp ?? 1) + speed - attack_cost + ( morale + agro ) * 0.1 ) * 0.01 +
                 ( vision_day + 2 * vision_night ) * 0.01;
-  return Math.floor(difficulty);
+  return Math.max(1, Math.floor(difficulty));
 }
 
 function difficultyDescription(diff: number) {
@@ -124,7 +133,7 @@ function damage(mon: Monster) {
   );
 }
 
-// From mtype.h. See also http://cddawiki.chezzo.com/cdda_wiki/index.php?title=Template:Enemyflags&action=edit.
+// From mtype.h. See also https://github.com/CleverRaven/Cataclysm-DDA/blob/master/doc/JSON_FLAGS.md#monsters
 // prettier-ignore
 const mon_flag_descriptions: Record<string, string> = {
   SEES: "It can see you (and will run/follow)",
@@ -212,6 +221,7 @@ const mon_flag_descriptions: Record<string, string> = {
   NIGHT_INVISIBILITY: "Monsters that are invisible in poor light conditions",
   REVIVES_HEALTHY: "When revived, this monster has full hitpoints and speed",
   NO_NECRO: "This monster can't be revived by necros. It will still rise on its own.",
+  PATH_AVOID_DANGER: "This monster will path around some dangers instead of through them.",
   PATH_AVOID_DANGER_1: "This monster will path around some dangers instead of through them.",
   PATH_AVOID_DANGER_2: "This monster will path around most dangers instead of through them.",
   PATH_AVOID_FIRE: "This monster will path around heat-related dangers instead of through them.",
@@ -238,6 +248,14 @@ const mon_flag_descriptions: Record<string, string> = {
   DROPS_AMMO: "This monster drops ammo. Should not be set for monsters that use pseudo ammo.",
   INSECTICIDEPROOF: "This monster is immune to insecticide, even though it's made of bug flesh",
   RANGED_ATTACKER: "This monster has any sort of ranged attack",
+  CORNERED_FIGHTER: "This creature will stop fleeing and fight back if enemies pursue it into melee range.",
+  SMALL_HIDER: "This small monster can hide under or behind furniture such as beds, refrigerators, and underbrush.",
+  CAN_BE_CULLED: "This animal can be culled if it's a pet.",
+  EATS: "This creature has a stomach size (defined in its monster json) which gets filled up when it eats, and digests food over time.",
+  WATER_CAMOUFLAGE: "If in water, stays invisible up to (current Perception, + base Perception if the character has the Spotting proficiency) tiles away, even in broad daylight. Monsters see it from the lower of day vision and night vision ranges. Can also make it harder to see in deep water or across z-levels if it is underwater and the viewer is not.",
+  NOT_HALLUCINATION: "This monster does not appear while the player is hallucinating.",
+  PARALYZE_VENOM: "This monster can apply paralyzing effect for 10 minutes.",
+  HAS_MIND: "Is sapient and capable of reason (mi-go, triffids, cyborgs, etc.).",
 };
 
 // prettier-ignore
@@ -375,9 +393,12 @@ let upgrades =
           <dd>
             <dl>
               {#each Object.entries(monsterArmor(item.armor)) as [damageTypeId, value]}
-                {@const damageType = data.byId("damage_type", damageTypeId)}
+                {@const damageType = data.byIdMaybe(
+                  "damage_type",
+                  damageTypeId
+                )}
                 {#if value}
-                  <dt>{singularName(damageType)}</dt>
+                  <dt>{singularName(damageType ?? { id: damageTypeId })}</dt>
                   <dd>{value.toFixed(1)}</dd>
                 {/if}
               {/each}

@@ -25,8 +25,10 @@ import type {
   ItemBasicInfo,
   ComestibleSlot,
   OvermapSpecial,
+  ArmorSlot,
+  BreathabilityRating,
 } from "./types";
-import type { ItemChance, Loot } from "./types/item/spawnLocations";
+import type { Loot } from "./types/item/spawnLocations";
 
 const typeMappings = new Map<string, keyof SupportedTypesWithMapped>([
   ["AMMO", "item"],
@@ -137,6 +139,7 @@ export function showProbability(prob: number) {
   return ret + "%";
 }
 
+// Returns ml
 export function parseVolume(string: string | number): number {
   if (typeof string === "undefined") return 0;
   if (typeof string === "number") return string * 250;
@@ -145,15 +148,36 @@ export function parseVolume(string: string | number): number {
   throw new Error("unknown volume unit: " + string);
 }
 
+// with g as 1
+const massUnitMultiplier = {
+  μg: 1e-6,
+  ug: 1e-6,
+  mcg: 1e-6,
+  mg: 1e-3,
+  g: 1,
+  kg: 1e3,
+};
+
+// Returns grams
 export function parseMass(string: string | number): number {
   if (typeof string === "undefined") return 0;
   if (typeof string === "number") return string;
-  if (string.endsWith("mg")) return parseInt(string) / 1000;
-  if (string.endsWith("kg")) return parseInt(string) * 1000;
-  if (string.endsWith("g")) return parseInt(string);
-  throw new Error("unknown mass unit: " + string);
+  let m: RegExpExecArray | null;
+  let val = 0;
+  const re = new RegExp(
+    `(\\d+)\\s+(${Object.keys(massUnitMultiplier).join("|")})`,
+    "g"
+  );
+  while ((m = re.exec(string))) {
+    const [_, num, unit] = m;
+    val +=
+      parseInt(num) *
+      massUnitMultiplier[unit as keyof typeof massUnitMultiplier];
+  }
+  return val;
 }
 
+// Returns seconds
 export function parseDuration(duration: string | number): number {
   if (typeof duration === "number") return duration / 100;
   const turns = 1;
@@ -471,13 +495,37 @@ export class CddaData {
     }
     delete ret.relative;
     for (const k of Object.keys(ret.proportional ?? {})) {
-      if (typeof ret.proportional[k] === "number") {
+      if (
+        (ret.type === "ARMOR" || ret.type === "TOOL_ARMOR") &&
+        "armor" in ret
+      ) {
+        ret.armor = JSON.parse(JSON.stringify(ret.armor));
+        if (k === "encumbrance") {
+          for (const apd of ret.armor ?? []) {
+            if (typeof apd.encumbrance === "number") {
+              apd.encumbrance = (apd.encumbrance * ret.proportional[k]) | 0;
+            } else if (Array.isArray(apd.encumbrance)) {
+              apd.encumbrance = apd.encumbrance.map(
+                (x: number) => (x * ret.proportional[k]) | 0
+              );
+            }
+          }
+        }
+      }
+      if (typeof ret.proportional[k] === "number" && k in ret) {
         if (k === "attack_cost" && !(k in ret)) ret[k] = 100;
         if (typeof ret[k] === "string") {
           const m = /^\s*(\d+)\s*(.+)$/.exec(ret[k]);
           if (m) {
             const [, num, unit] = m;
-            ret[k] = `${Number(num) * ret.proportional[k]} ${unit}`;
+            ret[k] = `${(Number(num) * ret.proportional[k]) | 0} ${unit}`;
+          }
+        } else if (typeof ret[k] === "object") {
+          ret[k] = JSON.parse(JSON.stringify(ret[k]));
+          for (const [k2, v] of Object.entries(ret[k])) {
+            if (typeof v === "number") {
+              ret[k][k2] *= ret.proportional[k];
+            }
           }
         } else {
           ret[k] *= ret.proportional[k];
@@ -552,14 +600,45 @@ export class CddaData {
       }
     }
     delete ret.delete;
-    if ("replace_materials" in ret && ret.material) {
-      for (const [toReplace, replacement] of Object.entries(
-        ret.replace_materials
-      )) {
-        ret.material = ret.material.map((x: any) =>
-          x.type === toReplace ? { ...x, type: replacement } : x
-        );
+    if ("replace_materials" in ret) {
+      const mats = ret.material as ItemBasicInfo["material"];
+      if (mats) {
+        if (typeof mats === "string") {
+          if (ret.replace_materials[mats]) {
+            ret.material = ret.replace_materials[mats];
+          }
+        } else {
+          ret.material = mats.map((x) => {
+            if (typeof x === "string") {
+              return ret.replace_materials[x] ?? x;
+            } else {
+              if (x.type in ret.replace_materials) {
+                return { ...x, type: ret.replace_materials[x.type] };
+              }
+              return x;
+            }
+          });
+        }
         // TODO: update weight
+      }
+      if ("armor" in ret) {
+        const armor = ret.armor as ArmorSlot["armor"];
+        if (armor) {
+          for (const apd of armor) {
+            if (apd.material) {
+              apd.material = apd.material.map((x) => {
+                if (typeof x === "string") {
+                  return ret.replace_materials[x] ?? x;
+                } else {
+                  if (x.type in ret.replace_materials) {
+                    return { ...x, type: ret.replace_materials[x.type] };
+                  }
+                  return x;
+                }
+              });
+            }
+          }
+        }
       }
     }
     this._flattenCache.set(obj, ret);
@@ -1699,6 +1778,24 @@ export function normalizeUseAction(action: Item["use_action"]): UseFunction[] {
   } else {
     return action ? [action] : [];
   }
+}
+
+export function breathabilityFromRating(br: BreathabilityRating): number {
+  switch (br) {
+    case "IMPERMEABLE":
+      return 0;
+    case "POOR":
+      return 30;
+    case "AVERAGE":
+      return 50;
+    case "GOOD":
+      return 80;
+    case "MOISTURE_WICKING":
+      return 110;
+    case "SECOND_SKIN":
+      return 140;
+  }
+  return 0;
 }
 
 const fetchJsonWithProgress = (

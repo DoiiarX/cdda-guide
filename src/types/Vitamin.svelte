@@ -29,6 +29,7 @@ const mutationCategory = data
   .byType("mutation_category")
   .find((c) => c.vitamin === item.id);
 
+const unitsPerDay = (24 * 60 * 60) / parseDuration(item.rate);
 const containingComestibles = data
   .byType("item")
   .filter(
@@ -43,7 +44,10 @@ const containingComestibles = data
     const pct: number =
       typeof pctOrMass !== "number"
         ? item.weight_per_unit
-          ? parseMass(pctOrMass ?? "0 g") / parseMass(item.weight_per_unit)
+          ? (parseMass(pctOrMass ?? "0 g") /
+              parseMass(item.weight_per_unit) /
+              unitsPerDay) *
+            100
           : 0
         : pctOrMass;
     return {
@@ -148,8 +152,9 @@ const deficiencyNames = item.deficiency
   <section>
     <h1>{t("Comestibles", { _context })}</h1>
     <LimitedList items={containing} let:item={other}>
-      <ThingLink id={other.comestible.id} type="item" /> ({other.pct}{item.vit_type ===
-      "counter"
+      <ThingLink id={other.comestible.id} type="item" /> ({other.pct.toFixed(
+        2
+      )}{item.vit_type === "counter" || item.vit_type === "drug"
         ? " U"
         : "% RDA"})
     </LimitedList>
