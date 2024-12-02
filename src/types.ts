@@ -110,7 +110,7 @@ export type Construction = {
       )[];
   pre_note?: string;
 
-  pre_terrain?: string; // if starts with f_, then furniture_id, else terrain_id
+  pre_terrain?: string | string[]; // if starts with f_, then furniture_id, else terrain_id
   post_terrain?: string; // as above
 
   pre_flags?:
@@ -958,7 +958,7 @@ export type Skill = {
   type: "skill";
   id: string;
   name: Translation;
-  description: string;
+  description: Translation;
 };
 
 export type MartialArtRequirements = {
@@ -1143,7 +1143,7 @@ interface MapgenPlace {
 }
 
 export type MapgenPlaceTerrain = {
-  ter: string;
+  ter: MapgenValue;
 };
 
 export type MapgenPlaceFurniture = {
@@ -1151,7 +1151,7 @@ export type MapgenPlaceFurniture = {
 };
 
 export interface MapgenObject {
-  fill_ter?: string;
+  fill_ter?: MapgenValue;
   rows?: string[];
   terrain?: PlaceMappingAlternative<MapgenValue>;
   place_terrain?: PlaceList<MapgenPlaceTerrain>;
@@ -1650,7 +1650,7 @@ export type OvermapTerrain = {
   name: Translation;
 
   sym?: string; // defaults to \u00a0
-  color: string;
+  color?: string;
   // ...
 };
 

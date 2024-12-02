@@ -333,7 +333,7 @@ export function overmapAppearance(
   function omtAppearanceString(omt_id: string): string {
     const omt = data.byId("overmap_terrain", omt_id);
     return omt
-      ? `${omt.sym}\u0001${omt.color}\u0001${omt.name}`
+      ? `${omt.sym}\u0001${omt.color ?? "black"}\u0001${omt.name}`
       : `appearance_unk`;
   }
 }
@@ -366,6 +366,7 @@ const hiddenLocations = showAll
       "gas station bunker",
       "bunker shop",
       "physics_lab_LIXA",
+      "office_tower_hiddenlab",
     ]);
 function lazily<T extends object, U>(f: (x: T) => U): (x: T) => U {
   const cache = new WeakMap<T, U>();
@@ -492,15 +493,15 @@ function addLoot(loots: Loot[]): Loot {
 }
 
 function getMapgenValue(val: raw.MapgenValue): string | undefined {
-  if (typeof val === "string") return val;
-  if (
-    "switch" in val &&
-    typeof val.switch === "object" &&
-    "fallback" in val.switch &&
-    val.switch.fallback
-  )
-    return val.cases[val.switch["fallback"]];
-  // TODO: support distribution, param/fallback?
+  const distribution = getMapgenValueDistribution(val);
+  let maxProb = -Infinity;
+  let maxId: string | undefined;
+  for (const [id, prob] of distribution.entries())
+    if (prob > maxProb) {
+      maxProb = prob;
+      maxId = id;
+    }
+  return maxId;
 }
 
 function getMapgenValueDistribution(val: raw.MapgenValue): Map<string, number> {
@@ -509,9 +510,11 @@ function getMapgenValueDistribution(val: raw.MapgenValue): Map<string, number> {
     "switch" in val &&
     typeof val.switch === "object" &&
     "fallback" in val.switch &&
-    val.switch.fallback
+    val.switch.fallback &&
+    val.switch.fallback in val.cases &&
+    val.cases[val.switch.fallback]
   )
-    return new Map([[val.cases[val.switch["fallback"]], 1]]);
+    return new Map([[val.cases[val.switch.fallback], 1]]);
   if ("distribution" in val) {
     const opts = val.distribution;
     const totalProb = opts.reduce(
@@ -526,7 +529,22 @@ function getMapgenValueDistribution(val: raw.MapgenValue): Map<string, number> {
       )
     );
   }
+  if ("param" in val) {
+    if ("fallback" in val && val.fallback) {
+      return new Map([[val.fallback, 1]]);
+    }
+  }
   return new Map();
+}
+
+function toLoot(distribution: Map<string, number>): Loot {
+  // TODO: i'm not sure this is correct?
+  return new Map(
+    [...distribution.entries()].map(([id, prob]) => [
+      id,
+      { prob, expected: prob },
+    ])
+  );
 }
 
 let onStack = 0;
@@ -669,21 +687,34 @@ export function getTerrainForMapgen(data: CddaData, mapgen: raw.Mapgen): Loot {
   if (terrainForMapgenCache.has(mapgen))
     return terrainForMapgenCache.get(mapgen)!;
   const palette = parseTerrainPalette(data, mapgen.object);
-  const place_terrain = (mapgen.object.place_terrain ?? []).map(
-    ({ ter }) => new Map([[ter, { prob: 1, expected: 1 }]])
+  const fill_ter = mapgen.object.fill_ter
+    ? getMapgenValueDistribution(mapgen.object.fill_ter)
+    : new Map<string, number>();
+  const place_terrain = (mapgen.object.place_terrain ?? []).map(({ ter }) =>
+    toLoot(getMapgenValueDistribution(ter))
   );
   const additional_items = collection([...place_terrain]);
   const countByPalette = new Map<string, number>();
+  let fillCount = 0;
   for (const row of mapgen.object.rows ?? [])
     for (const char of row)
       if (palette.has(char))
         countByPalette.set(char, (countByPalette.get(char) ?? 0) + 1);
+      else fillCount += 1;
   const items: Loot[] = [];
   for (const [sym, count] of countByPalette.entries()) {
     const loot = palette.get(sym)!;
     const multipliedLoot: Loot = new Map();
     for (const [id, chance] of loot.entries()) {
       multipliedLoot.set(id, repeatItemChance(chance, [count, count]));
+    }
+    items.push(multipliedLoot);
+  }
+  if (fillCount > 0) {
+    const loot = toLoot(fill_ter);
+    const multipliedLoot: Loot = new Map();
+    for (const [id, chance] of loot.entries()) {
+      multipliedLoot.set(id, repeatItemChance(chance, [fillCount, fillCount]));
     }
     items.push(multipliedLoot);
   }
@@ -869,8 +900,9 @@ export function parseFurniturePalette(
   const furniture = parsePlaceMappingAlternative(
     palette.furniture,
     function* (furn) {
-      const value = getMapgenValue(furn);
-      if (value) yield new Map([[value, { prob: 1, expected: 1 }]]);
+      const value = getMapgenValueDistribution(furn);
+      for (const [f, prob] of value.entries())
+        if (value) yield new Map([[f, { prob, expected: prob }]]);
     }
   );
   const palettes = (palette.palettes ?? []).flatMap((val) => {
@@ -908,8 +940,9 @@ export function parseTerrainPalette(
   const terrain = parsePlaceMappingAlternative(
     palette.terrain,
     function* (ter) {
-      const value = getMapgenValue(ter);
-      if (value) yield new Map([[value, { prob: 1, expected: 1 }]]);
+      const value = getMapgenValueDistribution(ter);
+      for (const [t, prob] of value.entries())
+        if (value) yield new Map([[t, { prob, expected: prob }]]);
     }
   );
   const palettes = (palette.palettes ?? []).flatMap((val) => {
