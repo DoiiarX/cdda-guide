@@ -329,13 +329,11 @@ function langHref(lang: string, href: string) {
     </div>
     <div class="blog-link">
       <strong>
-      <a href="http://notion.doiiars.com"><span class="wide">Doiiars的博客</span><span
+      <a href="https://doiiars.com"><span class="wide">Doiiars的博客</span><span
         class="narrow">博客</span></a>
       </strong>
     </div>
   </nav>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6765970453610684"
-     crossorigin="anonymous"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-KQB25CC08Q"></script>
   <script>
